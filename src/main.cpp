@@ -1,18 +1,34 @@
-#include <Arduino.h>
+#include <SimpleFOC.h>
 
-// put function declarations here:
-int myFunction(int, int);
+// for PWM magnetic sensor
+constexpr int ENCODER1_PWM_PIN = 2;
+constexpr int MIN_ENCODER1_PWM_PULSE_US = 12;
+constexpr int MAX_ENCODER1_PWM_PULSE_US = 998;
 
-void setup() {
-  // put your setup code here, to run once:
-  int result = myFunction(2, 3);
+MagneticSensorPWM sensor1 = MagneticSensorPWM(
+    ENCODER1_PWM_PIN,
+    MIN_ENCODER1_PWM_PULSE_US,
+    MAX_ENCODER1_PWM_PULSE_US);
+
+void non_blocking_encoder1_PWM_handle()
+{
+  sensor1.handlePWM();
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
+void setup()
+{
+  Serial.begin(115200);
+  sensor1.init();
+  sensor1.enableInterrupt(non_blocking_encoder1_PWM_handle);
 }
 
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
+void loop()
+{
+  sensor1.update();
+
+  Serial.print("pos: ");
+  Serial.print(sensor1.getAngle());
+  Serial.print(", vel: ");
+  Serial.print(sensor1.getVelocity());
+  Serial.println();
 }
