@@ -14,41 +14,49 @@ constexpr int HT2205_POLE_PAIRS = 7;
 BLDCMotor motor1 = BLDCMotor(HT2205_POLE_PAIRS);
 
 Commander command = Commander(Serial);
-void doTarget(char* cmd) { command.scalar(&motor1.target, cmd); }
-void doLimit(char* cmd) { command.scalar(&motor1.voltage_limit, cmd); }
+void doMotor(char* cmd) {command.motor(&motor1, cmd);}
 
 void setup() {
   Serial.begin(115200);
-  sensor1.init();
+  // comment out for improved performance
+  // SimpleFOCDebug::enable(&Serial);
+  // motor1.useMonitoring(Serial);
 
-  SimpleFOCDebug::enable(&Serial);
+  sensor1.init();
+  motor1.linkSensor(&sensor1);
   
   driver1.voltage_power_supply = 12;
   driver1.voltage_limit = 12;
-
   if (!driver1.init()){
-    Serial.println("Driver init failed");
+    Serial.println("Driver failed");
     return;
   }
-
   motor1.linkDriver(&driver1);
-  motor1.controller = MotionControlType::velocity_openloop;
 
+  motor1.torque_controller = TorqueControlType::voltage;
+  motor1.controller = MotionControlType::torque;
+
+  motor1.voltage_sensor_align = 12.0f;
   if (!motor1.init()){
-    Serial.println("Motor init failed");
+    Serial.println("Motor failed");
     return;
   }
 
-  motor1.target = 2.0f * M_PI;
 
-  command.add('T', doTarget, "target velocity");
-  command.add('L', doLimit, "voltage limit");
+  if(!motor1.initFOC()){
+    Serial.println("FOC failed");
+    return;
+  }
+
+  motor1.target = 2.0; // volts
+
+  command.add('M', doMotor, "Motor");
+  Serial.println(F("Motor ready."));
+  Serial.println(F("Set the target with command M:"));
 }
 
 void loop(){
-  sensor1.update();
-  // Serial.println(sensor1.getAngle());
-  // driver1.setPwm(3,6,5);
+  motor1.loopFOC();
   motor1.move();
   command.run();
 }
