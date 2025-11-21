@@ -48,7 +48,7 @@ void setup() {
     return;
   }
 
-  motor1.target = 2.0; // volts
+  motor1.target = 6.0; // Nm  
 
   command.add('M', doMotor, "Motor");
   Serial.println(F("Motor ready."));
